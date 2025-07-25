@@ -374,7 +374,7 @@ async def summarize_upload(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+#
 @app.get("/summaries")
 async def get_summaries():
     """Return all summaries in the database"""

@@ -30,13 +30,13 @@ jobs:
     
     - name: Build and push to Artifact Registry
       run: |
-        docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/video-summary-repo/video-summary-generator:${{ github.sha }} .
-        docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/video-summary-repo/video-summary-generator:${{ github.sha }}
+        docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/docker-repo/video-summary-generator:${{ github.sha }} .
+        docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/docker-repo/video-summary-generator:${{ github.sha }}
     
     - name: Deploy to Cloud Run
       run: |
         gcloud run deploy video-summary-generator \
-          --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/video-summary-repo/video-summary-generator:${{ github.sha }} \
+          --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/docker-repo/video-summary-generator:${{ github.sha }} \
           --platform managed \
           --region us-central1 \
           --allow-unauthenticated \

@@ -1,0 +1,36 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    
+    - name: Build and push to GCR
+      run: |
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/video-summary-generator:${{ github.sha }} .
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/video-summary-generator:${{ github.sha }}
+    
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy video-summary-generator \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/video-summary-generator:${{ github.sha }} \
+          --platform managed \
+          --region us-central1 \
+          --allow-unauthenticated \
+          --set-env-vars GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }} \
+          --memory 2Gi \
+          --cpu 2 \
+          --timeout 300

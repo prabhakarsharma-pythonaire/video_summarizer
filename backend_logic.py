@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import moviepy.editor as mp
 import speech_recognition as sr
 import re
-import requests
+import requests 
 import json
 from typing import Optional, List
 import uuid
@@ -37,7 +37,7 @@ app = FastAPI(title="Video Summary API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

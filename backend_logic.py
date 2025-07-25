@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -97,12 +96,50 @@ def get_video_metadata(video_id):
         print(f"Error getting metadata: {str(e)}")
         return {}
     
-def get_video_transcript(video_id):
+def get_transcript_multilingual(video_id: str, language: str = "auto") -> str:
+    """Get transcript from YouTube API with language support and fallback to speech recognition"""
+    
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        return ' '.join([item['text'] for item in transcript])
+        # First, try to get YouTube transcript
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        
+        if language == "auto":
+            # Try preferred languages first
+            preferred_languages = ['en', 'hi-IN', 'es', 'fr', 'de', 'ja', 'zh', 'ko', 'ar']
+            
+            for lang in preferred_languages:
+                try:
+                    transcript = transcript_list.find_transcript([lang])
+                    return " ".join([item["text"] for item in transcript.fetch()])
+                except:
+                    continue
+            
+            # If no preferred language found, get the first available
+            for transcript in transcript_list:
+                return " ".join([item["text"] for item in transcript.fetch()])
+        else:
+            # Try to get the specified language
+            try:
+                transcript = transcript_list.find_transcript([language])
+                return " ".join([item["text"] for item in transcript.fetch()])
+            except:
+                # If specified language not available, get first available
+                for transcript in transcript_list:
+                    return " ".join([item["text"] for item in transcript.fetch()])
+                    
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error getting transcript: {str(e)}")
+        # If YouTube transcript fails, provide helpful error message
+        error_msg = str(e)
+        if "Subtitles are disabled" in error_msg or "TranscriptsDisabled" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=f"This video ({video_id}) has no captions/transcripts available. Speech recognition fallback is not currently supported due to YouTube restrictions. Please try a video with captions enabled."
+            )
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Error getting transcript for {video_id}: {error_msg}"
+            )
 
 
 
@@ -226,7 +263,7 @@ async def summarize_youtube(request: SummaryRequest):
     metadata = get_video_metadata(video_id)
     
     # Get transcript
-    transcript = get_video_transcript(video_id)
+    transcript = get_transcript_multilingual(video_id, request.options.language)
     
     # Generate summary
     summary = summarize_text(transcript, request.options)
